@@ -1,0 +1,11 @@
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.idea/
+.vscode/
+.DS_Store
+
+# intermediario gerado por docs/gerar_documentacao.py
+docs/DOCUMENTACAO.html
