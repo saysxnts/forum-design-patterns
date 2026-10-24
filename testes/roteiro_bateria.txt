@@ -1,0 +1,81 @@
+6
+recentes
+1
+ana
+ana@forum.com
+membro
+1
+bruno
+bruno@forum.com
+moderador
+1
+ana
+outro@forum.com
+membro
+2
+ana
+Como funciona a recursao em Python?
+Nao entendi o caso base.
+python,recursao
+n
+2
+ana
+Regras do forum
+Leia antes de postar.
+avisos
+s
+2
+bruno
+Regras do forum
+Leia antes de postar.
+avisos
+s
+7
+1
+bruno
+3
+1
+bruno
+Use um caso base para parar a recursao.
+3
+3
+ana
+Obrigada! Funcionou aqui.
+4
+4
+ana
+saida.txt
+2
+5
+1
+9
+3
+9
+3
+6
+recentes
+6
+votados
+8
+1
+fechar
+3
+1
+ana
+Posso perguntar mais uma coisa?
+8
+1
+arquivar
+8
+1
+abrir
+10
+Esse post e um lixo, autor burro.
+censura,destaque,assinatura
+bruno
+11
+recursao
+12
+ana
+13
+0
