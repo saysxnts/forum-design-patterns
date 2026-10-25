@@ -53,10 +53,44 @@ class ItemDiscussao(ABC):
         raise TypeError(f"{type(self).__name__} e uma folha e nao possui filhos.")
 
     # --- operacoes recursivas ----------------------------------------------
-    def exibir(self, nivel=0):
-        print("   " * nivel + self.rotulo())
+    def linhas(self, nivel=0):
+        """Arvore achatada em linhas de texto indentadas, em pre-ordem."""
+        resultado = ["   " * nivel + self.rotulo()]
         for filho in self.filhos():
-            filho.exibir(nivel + 1)
+            resultado.extend(filho.linhas(nivel + 1))
+        return resultado
+
+    def texto(self):
+        return "\n".join(self.linhas())
+
+    @property
+    @abstractmethod
+    def tipo(self):
+        """Nome do tipo de no, usado na serializacao para o cliente."""
+
+    def para_dicionario(self):
+        """Serializa o no e todos os descendentes para JSON.
+
+        A uniformidade do Composite aparece aqui: a mesma chamada funciona
+        para o topico inteiro, para uma unica resposta ou para um anexo.
+        """
+        dados = {
+            "identificador": self.identificador,
+            "tipo": self.tipo,
+            "tag": self.tag,
+            "caminho": self.caminho(),
+            "autor": self.autor.apelido,
+            "conteudo": self.conteudo,
+            "rotulo": self.rotulo(),
+            "total_itens": self.total_itens(),
+            "filhos": [filho.para_dicionario() for filho in self.filhos()],
+        }
+        dados.update(self._extras())
+        return dados
+
+    def _extras(self):
+        """Campos adicionais de cada tipo de no."""
+        return {}
 
     def total_itens(self):
         return 1 + sum(filho.total_itens() for filho in self.filhos())
@@ -100,6 +134,13 @@ class Anexo(ItemDiscussao):
     def tag(self):
         return f"A{self.identificador}"
 
+    @property
+    def tipo(self):
+        return "anexo"
+
+    def _extras(self):
+        return {"nome_arquivo": self.nome_arquivo, "tamanho_kb": self.tamanho_kb}
+
     def rotulo(self):
         return f"[ANEXO #{self.identificador}] {self.nome_arquivo} ({self.tamanho_kb} KB)"
 
@@ -140,6 +181,13 @@ class Mensagem(NoComposto):
     def tag(self):
         return f"M{self.identificador}"
 
+    @property
+    def tipo(self):
+        return "mensagem"
+
+    def _extras(self):
+        return {"votos": self.votos}
+
     def votar(self):
         self.votos += 1
         return self.votos
@@ -171,6 +219,26 @@ class Topico(NoComposto, Assunto):
     @property
     def tag(self):
         return f"T{self.identificador}"
+
+    @property
+    def tipo(self):
+        return "topico"
+
+    def _extras(self):
+        return {
+            "titulo": self.titulo,
+            "tags": list(self.tags),
+            "fixado": self.fixado,
+            "estado": self._estado.nome,
+            "aceita_resposta": self.aceita_resposta(),
+            "total_respostas": self.total_respostas(),
+            "total_votos": self.total_votos(),
+            "inscritos": [
+                observador.usuario.apelido
+                for observador in self.observadores
+                if hasattr(observador, "usuario")
+            ],
+        }
 
     # --- State --------------------------------------------------------------
     @property
