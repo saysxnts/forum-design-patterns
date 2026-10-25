@@ -1,8 +1,27 @@
 # Fórum de Discussão — Design Patterns em Python
 
-Projeto acadêmico que aplica **nove padrões de projeto do catálogo GoF** a um único domínio coerente: um fórum de discussão operado por menu de terminal. Python 3, sem dependências externas.
+Projeto de **Paradigmas de Programação (CC5AN)**: aplicação cliente/servidor com **nove padrões de projeto do catálogo GoF** aplicados ao domínio de um fórum de discussão.
 
-A ideia não é o fórum em si, e sim mostrar cada padrão resolvendo um problema real da aplicação — e deixar isso visível em tempo de execução: o programa imprime uma marca como `[Observer]` ou `[State]` sempre que um padrão entra em ação.
+- **Servidor** — Flask, com um endpoint para cada recurso.
+- **Cliente** — interface gráfica em Qt (PySide6) que consome esses endpoints.
+- Sem banco de dados, API de terceiros, serviço de nuvem ou serviço de IA.
+
+Para tornar os padrões visíveis durante a demonstração, **toda resposta do servidor traz o rastro dos padrões acionados naquela requisição**, e o cliente mostra esse rastro em um painel lateral.
+
+![Janela principal do cliente](docs/imagens/cliente-janela-principal.png)
+
+## Como executar
+
+```bash
+pip install -r requirements.txt
+
+python -m servidor     # terminal 1 — http://127.0.0.1:5000
+python -m cliente      # terminal 2 — interface gráfica
+```
+
+O cliente aceita outro endereço: `python -m cliente http://127.0.0.1:5050`.
+
+Requisito: Python 3.9 ou superior.
 
 ## Padrões implementados
 
@@ -10,104 +29,100 @@ A ideia não é o fórum em si, e sim mostrar cada padrão resolvendo um problem
 |---|---|---|---|
 | Singleton | Criacional | `forum/criacional/singleton.py` | Repositório único: usuários, tópicos e contador de identificadores |
 | Factory Method | Criacional | `forum/criacional/factory_method.py` | Roteiro único de publicação que fabrica Tópico, Mensagem ou Anexo |
-| Builder | Criacional | `forum/criacional/builder.py` | Montagem passo a passo de um tópico (título, autor, texto, tags, fixado) |
-| Composite | Estrutural | `forum/estrutural/composite.py` | Árvore da discussão: tópico → mensagens → respostas → anexos |
-| Decorator | Estrutural | `forum/estrutural/decorator.py` | Filtros de conteúdo empilháveis: censura, destaque e assinatura |
-| Facade | Estrutural | `forum/estrutural/facade.py` | Interface única de alto nível usada pelo menu |
+| Builder | Criacional | `forum/criacional/builder.py` | Montagem passo a passo de um tópico |
+| Composite | Estrutural | `forum/estrutural/composite.py` | Árvore da discussão e sua serialização para JSON |
+| Decorator | Estrutural | `forum/estrutural/decorator.py` | Filtros de conteúdo empilháveis |
+| Facade | Estrutural | `forum/estrutural/facade.py` | Camada de serviço chamada pelas rotas Flask |
 | Observer | Comportamental | `forum/comportamental/observer.py` | Notificação dos inscritos a cada nova resposta |
-| Strategy | Comportamental | `forum/comportamental/strategy.py` | Ordenação da lista de tópicos (recentes, respondidos, votados) |
+| Strategy | Comportamental | `forum/comportamental/strategy.py` | Ordenação da listagem de tópicos |
 | State | Comportamental | `forum/comportamental/state.py` | Ciclo de vida do tópico: Aberto, Fechado e Arquivado |
 
-## Como executar
+No cliente, `ApiForum` funciona como **proxy remoto**: expõe os mesmos métodos da fachada do servidor, mas empacota cada chamada em uma requisição HTTP.
 
-Requisito: Python 3.9 ou superior.
+## Endpoints
+
+| Método | Rota | Padrões acionados |
+|---|---|---|
+| `GET` | `/api/usuarios` | — |
+| `POST` | `/api/usuarios` | Facade, Singleton |
+| `GET` | `/api/usuarios/<apelido>/notificacoes` | Observer |
+| `GET` | `/api/topicos?ordenacao=` | Strategy |
+| `POST` | `/api/topicos` | Builder, Factory Method, Observer |
+| `GET` | `/api/topicos/<id>` | Composite |
+| `POST` | `/api/topicos/<id>/inscricoes` | Observer |
+| `PUT` | `/api/topicos/<id>/estado` | State |
+| `POST` | `/api/itens/<id>/respostas` | State, Factory Method, Composite, Observer |
+| `POST` | `/api/mensagens/<id>/anexos` | Factory Method, Composite |
+| `POST` | `/api/mensagens/<id>/votos` | Composite |
+| `POST` | `/api/conteudo/formatado` | Decorator |
+| `GET` | `/api/busca?termo=` | Facade, Composite |
+| `GET` | `/api/estatisticas` | Singleton |
+
+Toda resposta segue o mesmo envelope:
+
+```json
+{
+  "dados": { "...": "resultado da operação" },
+  "rastro": [
+    "[Facade] Coordenando Builder + Factory Method + Singleton + Observer",
+    "[Builder] Montando o topico passo a passo:",
+    "[Factory Method] CriadorDeTopico vai fabricar um(a) Topico"
+  ]
+}
+```
+
+Em caso de erro, `{"erro": "...", "rastro": [...]}` com o status HTTP adequado (400, 403, 404, 405 ou 409).
+
+## Testes
 
 ```bash
-python main.py                                  # menu interativo
-python main.py < testes/roteiro_bateria.txt     # reproduz a bateria de testes da documentação
-python -m unittest discover -s testes -v        # 29 testes automatizados
+python -m unittest discover -s testes -v     # 90 testes
+python testes/demonstracao.py                # roteiro da aplicação em uso + capturas de tela
+python testes/demonstracao.py --sem-gui      # somente o roteiro HTTP
 ```
 
-## Menu
+| Arquivo | Testes | O que cobre |
+|---|---|---|
+| `testes/test_padroes.py` | 33 | O domínio, com um grupo de testes por padrão |
+| `testes/test_servidor.py` | 35 | Os endpoints: formato das respostas, status HTTP e regras de negócio |
+| `testes/test_cliente.py` | 12 | O acesso do cliente: rotas, erros HTTP, servidor fora do ar |
+| `testes/test_cliente_gui.py` | 10 | A janela gráfica, com a plataforma `offscreen` do Qt |
 
-```
-===== Forum de Discussao =====
-1.  Cadastrar usuario                      [Singleton]
-2.  Abrir novo topico                      [Builder + Factory Method]
-3.  Responder a um topico ou mensagem      [Factory Method + State + Observer]
-4.  Anexar arquivo a uma mensagem          [Composite - folha]
-5.  Exibir a arvore de uma discussao       [Composite]
-6.  Listar topicos                         [Strategy]
-7.  Inscrever usuario em um topico         [Observer]
-8.  Alterar o estado de um topico          [State]
-9.  Votar em uma mensagem
-10. Formatar um conteudo                   [Decorator]
-11. Buscar por texto                       [Facade]
-12. Ver caixa de entrada de um usuario     [Observer]
-13. Estatisticas do forum                  [Singleton]
-0.  Sair
-```
+Os testes do cliente conversam com o servidor real por meio de uma sessão que encaminha cada chamada ao `test_client` do Flask: o caminho completo é exercitado sem abrir porta de rede.
 
-## Exemplo de execução
+## Documentação
 
-Publicar uma resposta aciona quatro padrões em sequência — a fachada consulta o estado, o criador fabrica o produto, a árvore recebe o nó e os inscritos são notificados:
+A documentação completa está em [`docs/DOCUMENTACAO.md`](docs/DOCUMENTACAO.md) e no PDF [`docs/Forum_Discussao_Design_Patterns.pdf`](docs/Forum_Discussao_Design_Patterns.pdf), com:
 
-```
---- Responder ---
-[Facade] Verificando o estado do topico #1...
-[Factory Method] CriadorDeMensagem vai fabricar um(a) Mensagem...
-[Factory Method] Produto criado: [MSG #3] bruno: Use um caso base para parar a recursao. (votos: 0)
-[Composite] Mensagem inserida em /T1/M3.
-[Observer] Notificando 3 inscrito(s) sobre o evento "nova-resposta"...
-  -> Caixa de entrada de ana: bruno respondeu em "Como funciona a recursao em Python?"
-  -> Registro de atividade: evento nova-resposta gravado (total: 1).
-  -> Caixa de entrada de bruno: bruno respondeu em "Como funciona a recursao em Python?"
-Resposta publicada com sucesso!
+- requisitos funcionais e não-funcionais, e condições de aceitação;
+- diagramas de classes do cliente e do servidor (`docs/imagens/`);
+- a intenção de cada padrão e o problema que ele resolve no fórum;
+- o código-fonte completo da aplicação;
+- a demonstração da aplicação em uso, com a saída real de uma execução.
+
+Para regerar documentação e diagramas após alterar o código:
+
+```bash
+python docs/gerar_diagramas.py
+python docs/gerar_documentacao.py
 ```
 
-E a árvore da discussão (Composite) exibida em qualquer profundidade:
-
-```
-[TOPICO #1] Como funciona a recursao em Python? <Aberto> - por ana (tags: python, recursao)
-   [MSG #3] bruno: Use um caso base para parar a recursao. (votos: 0)
-      [MSG #4] ana: Obrigada! Funcionou aqui. (votos: 0)
-         [ANEXO #5] saida.txt (2 KB)
-```
+O gerador reinsere o código-fonte real dos arquivos `.py` e executa a suíte de testes e o roteiro de demonstração na hora, então a documentação nunca mostra um resultado que o projeto não produz.
 
 ## Estrutura do projeto
 
 ```
 forum-design-patterns/
-├── main.py                        menu interativo (cliente do subsistema)
-├── forum/
-│   ├── modelos.py                 Usuario
-│   ├── criacional/                singleton.py, factory_method.py, builder.py
-│   ├── estrutural/                composite.py, decorator.py, facade.py
-│   └── comportamental/            observer.py, strategy.py, state.py
-├── testes/
-│   ├── test_padroes.py            29 testes automatizados (unittest)
-│   └── roteiro_bateria.txt        entradas da bateria de testes documentada
-└── docs/
-    ├── DOCUMENTACAO.md            documentação completa
-    ├── Forum_Discussao_Design_Patterns.pdf
-    └── gerar_documentacao.py      regera o Markdown e o PDF
+├── servidor/        app.py (rotas Flask), __main__.py
+├── cliente/         api.py (proxy), janela.py, dialogos.py, __main__.py
+├── forum/           domínio: modelos, rastro, erros e os nove padrões
+├── testes/          suíte automatizada e roteiro de demonstração
+└── docs/            documentação, diagramas e geradores
 ```
-
-## Documentação
-
-A documentação completa está em [`docs/DOCUMENTACAO.md`](docs/DOCUMENTACAO.md) e no PDF em [`docs/Forum_Discussao_Design_Patterns.pdf`](docs/Forum_Discussao_Design_Patterns.pdf). Ela traz a intenção de cada padrão, o problema concreto que ele resolve no fórum, o código-fonte completo e uma bateria de 13 testes com objetivo, entrada e saída esperada.
-
-Para regerar os dois arquivos após alterar o código:
-
-```bash
-python docs/gerar_documentacao.py
-```
-
-O script reinsere o código-fonte real dentro do texto, então a documentação nunca fica fora de sincronia com os arquivos `.py`.
 
 ## Decisões de projeto
 
-- **Sem dependências externas.** Só a biblioteca padrão, para rodar em qualquer máquina com Python 3.9+.
-- **Um padrão por arquivo**, agrupado por categoria GoF, com o cabeçalho do módulo documentando intenção, aplicação e participantes.
-- **O cliente não conhece os padrões.** `main.py` importa apenas `ForumFacade`; nenhuma classe de padrão aparece no menu.
-- **Marcas de execução.** As linhas `[Padrão]` existem para fins didáticos: tornam visível qual padrão está agindo a cada operação.
+- **O domínio não conhece Flask nem Qt.** `forum/` é Python puro e pode ser testado isoladamente; a fachada levanta `ErroDeForum` com o status HTTP adequado, e quem traduz isso em resposta é a camada de API.
+- **O cliente não contém regra de negócio.** Toda validação acontece no servidor; a janela envia a requisição e trata a resposta.
+- **Um padrão por módulo**, com intenção, aplicação e participantes documentados no cabeçalho do arquivo.
+- **Rastro em vez de `print`.** O domínio registra o que cada padrão fez; o servidor devolve essas linhas na resposta e as grava no log.
