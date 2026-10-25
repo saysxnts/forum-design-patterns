@@ -1,13 +1,14 @@
-"""Testes automatizados dos nove padroes de projeto.
+"""Testes automatizados dos nove padroes de projeto (dominio).
+
+Valida o codigo do servidor na camada que concentra as regras: cada
+padrao tem o seu grupo de testes, sobre um forum limpo.
 
 Execucao a partir da raiz do repositorio:
 
     python -m unittest discover -s testes -v
 """
 
-import io
 import unittest
-from contextlib import redirect_stdout
 
 from forum.comportamental.observer import NotificadorDeUsuario, RegistroDeAtividade
 from forum.comportamental.state import Aberto, Arquivado, Fechado
@@ -25,6 +26,7 @@ from forum.criacional.factory_method import (
     obter_criador,
 )
 from forum.criacional.singleton import Forum
+from forum.erros import ErroDeForum
 from forum.estrutural.composite import Anexo, Mensagem, Topico
 from forum.estrutural.decorator import (
     ComAssinatura,
@@ -34,22 +36,21 @@ from forum.estrutural.decorator import (
 )
 from forum.estrutural.facade import ForumFacade
 from forum.modelos import Usuario
+from forum import rastro
 
 
 class BaseDeTeste(unittest.TestCase):
-    """Silencia a saida do programa e garante um forum limpo por teste."""
+    """Garante um forum limpo e um rastro vazio em cada teste."""
 
     def setUp(self):
         Forum.resetar()
-        self.saida = io.StringIO()
-        self._contexto = redirect_stdout(self.saida)
-        self._contexto.__enter__()
+        rastro.iniciar()
         self.ana = Usuario("ana", "ana@forum.com")
         self.bruno = Usuario("bruno", "bruno@forum.com", "moderador")
 
     def tearDown(self):
-        self._contexto.__exit__(None, None, None)
         Forum.resetar()
+        rastro.iniciar()
 
 
 class TesteSingleton(BaseDeTeste):
@@ -127,6 +128,21 @@ class TesteComposite(BaseDeTeste):
     def test_caminho_ate_a_raiz(self):
         topico, resposta = self.montar_arvore()
         self.assertEqual(resposta.filhos()[0].caminho(), "/T1/M2/M3")
+
+    def test_serializacao_recursiva(self):
+        topico, _ = self.montar_arvore()
+        dados = topico.para_dicionario()
+        self.assertEqual(dados["tipo"], "topico")
+        self.assertEqual(dados["filhos"][0]["tipo"], "mensagem")
+        self.assertEqual(dados["filhos"][0]["filhos"][1]["tipo"], "anexo")
+        self.assertEqual(dados["total_itens"], 4)
+
+    def test_linhas_indentadas(self):
+        topico, _ = self.montar_arvore()
+        linhas = topico.linhas()
+        self.assertEqual(len(linhas), 4)
+        self.assertTrue(linhas[1].startswith("   ["))
+        self.assertTrue(linhas[2].startswith("      ["))
 
     def test_folha_nao_aceita_filhos(self):
         anexo = Anexo(1, self.ana, "a.txt", 1)
@@ -238,10 +254,26 @@ class TesteFacade(BaseDeTeste):
     def test_topico_fechado_recusa_resposta(self):
         topico = self.fachada.abrir_discussao("ana", "Encerrado", "texto")
         self.fachada.alterar_estado(topico.identificador, "fechar")
-        self.assertIsNone(self.fachada.responder(topico.identificador, "bruno", "oi"))
+        with self.assertRaises(ErroDeForum) as contexto:
+            self.fachada.responder(topico.identificador, "bruno", "oi")
+        self.assertEqual(contexto.exception.codigo, 409)
 
     def test_usuario_duplicado(self):
-        self.assertIsNone(self.fachada.cadastrar_usuario("ana", "outro@forum.com"))
+        with self.assertRaises(ErroDeForum) as contexto:
+            self.fachada.cadastrar_usuario("ana", "outro@forum.com")
+        self.assertEqual(contexto.exception.codigo, 409)
+
+    def test_item_inexistente(self):
+        with self.assertRaises(ErroDeForum) as contexto:
+            self.fachada.responder(999, "ana", "oi")
+        self.assertEqual(contexto.exception.codigo, 404)
+
+    def test_rastro_registra_os_padroes(self):
+        rastro.iniciar()
+        self.fachada.abrir_discussao("ana", "Rastro", "texto")
+        linhas = " ".join(rastro.linhas())
+        for padrao in ("[Facade]", "[Builder]", "[Factory Method]"):
+            self.assertIn(padrao, linhas)
 
     def test_busca_recursiva(self):
         topico = self.fachada.abrir_discussao("ana", "Busca", "conteudo inicial")
@@ -249,11 +281,11 @@ class TesteFacade(BaseDeTeste):
         self.assertEqual(len(self.fachada.buscar("rara")), 1)
 
     def test_somente_moderador_fixa(self):
-        self.assertIsNone(
+        with self.assertRaises(ErroDeForum) as contexto:
             self.fachada.abrir_discussao("ana", "Aviso", "texto", fixado=True)
-        )
-        self.assertIsNotNone(
-            self.fachada.abrir_discussao("bruno", "Aviso", "texto", fixado=True)
+        self.assertEqual(contexto.exception.codigo, 403)
+        self.assertTrue(
+            self.fachada.abrir_discussao("bruno", "Aviso", "texto", fixado=True).fixado
         )
 
 
