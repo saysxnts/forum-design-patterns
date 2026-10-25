@@ -16,6 +16,9 @@ Implementacao
 """
 
 
+from ..rastro import rastrear
+
+
 class Forum:
     """Repositorio central do forum. Instancia unica."""
 
@@ -23,7 +26,7 @@ class Forum:
 
     def __new__(cls):
         if cls._instancia is None:
-            print("[Singleton] Primeira chamada: criando a unica instancia de Forum...")
+            rastrear("Singleton", "Primeira chamada: criando a unica instancia de Forum")
             cls._instancia = super().__new__(cls)
             cls._instancia._inicializar()
         return cls._instancia

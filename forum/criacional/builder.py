@@ -18,6 +18,7 @@ Participantes
     Diretor (Director)         -> ForumFacade (forum.estrutural.facade)
 """
 
+from ..rastro import rastrear
 from .factory_method import CriadorDeTopico
 
 
@@ -79,12 +80,12 @@ class ConstrutorDeTopico:
         if self._titulo is None:
             raise ValueError("Builder incompleto: titulo nao informado.")
 
-        print("[Builder] Montando o topico passo a passo:")
-        print(f"  - titulo .....: {self._titulo}")
-        print(f"  - autor ......: {self._autor.apelido}")
-        print(f"  - conteudo ...: {self._conteudo or '(vazio)'}")
-        print(f"  - tags .......: {', '.join(self._tags) if self._tags else '(nenhuma)'}")
-        print(f"  - fixado .....: {'sim' if self._fixado else 'nao'}")
+        rastrear("Builder", "Montando o topico passo a passo:")
+        rastrear(None, f"  - titulo ...: {self._titulo}")
+        rastrear(None, f"  - autor ....: {self._autor.apelido}")
+        rastrear(None, f"  - conteudo .: {self._conteudo or '(vazio)'}")
+        rastrear(None, f"  - tags .....: {', '.join(self._tags) if self._tags else '(nenhuma)'}")
+        rastrear(None, f"  - fixado ...: {'sim' if self._fixado else 'nao'}")
 
         topico = CriadorDeTopico().publicar(
             self._identificador,

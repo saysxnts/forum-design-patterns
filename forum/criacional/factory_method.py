@@ -21,6 +21,7 @@ Participantes
 from abc import ABC, abstractmethod
 
 from ..estrutural.composite import Anexo, Mensagem, Topico
+from ..rastro import rastrear
 
 
 class CriadorDePublicacao(ABC):
@@ -33,9 +34,9 @@ class CriadorDePublicacao(ABC):
         """Factory Method: cada subclasse devolve o seu produto concreto."""
 
     def publicar(self, identificador, autor, **dados):
-        print(f"[Factory Method] {type(self).__name__} vai fabricar um(a) {self.tipo}...")
+        rastrear("Factory Method", f"{type(self).__name__} vai fabricar um(a) {self.tipo}")
         produto = self._fabricar(identificador, autor, **dados)
-        print(f"[Factory Method] Produto criado: {produto.rotulo()}")
+        rastrear("Factory Method", f"Produto criado: {produto.rotulo()}")
         return produto
 
 

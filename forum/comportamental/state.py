@@ -22,6 +22,8 @@ Participantes
 
 from abc import ABC, abstractmethod
 
+from ..rastro import rastrear
+
 
 class EstadoTopico(ABC):
     """Interface comum aos estados de um topico."""
@@ -42,12 +44,12 @@ class EstadoTopico(ABC):
         return self._recusar(topico, "arquivar")
 
     def _trocar(self, topico, novo_estado):
-        print(f"[State] Transicao: {self.nome} -> {novo_estado.nome}")
+        rastrear("State", f"Transicao: {self.nome} -> {novo_estado.nome}")
         topico.definir_estado(novo_estado)
         return True
 
     def _recusar(self, topico, acao):
-        print(f'[State] Transicao recusada: nao e possivel "{acao}" um topico {self.nome}.')
+        rastrear("State", f'Transicao recusada: nao e possivel "{acao}" um topico {self.nome}')
         return False
 
     def __str__(self):
@@ -61,7 +63,7 @@ class Aberto(EstadoTopico):
         return True
 
     def abrir(self, topico):
-        print("[State] O topico ja esta Aberto.")
+        rastrear("State", "O topico ja esta Aberto")
         return False
 
     def fechar(self, topico):
@@ -81,7 +83,7 @@ class Fechado(EstadoTopico):
         return self._trocar(topico, Aberto())
 
     def fechar(self, topico):
-        print("[State] O topico ja esta Fechado.")
+        rastrear("State", "O topico ja esta Fechado")
         return False
 
     def arquivar(self, topico):
@@ -97,5 +99,5 @@ class Arquivado(EstadoTopico):
         return False
 
     def arquivar(self, topico):
-        print("[State] O topico ja esta Arquivado.")
+        rastrear("State", "O topico ja esta Arquivado")
         return False

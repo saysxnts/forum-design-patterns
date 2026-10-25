@@ -18,6 +18,8 @@ Participantes
 
 from abc import ABC, abstractmethod
 
+from ..rastro import rastrear
+
 
 class Observador(ABC):
     """Interface comum a todos os observadores."""
@@ -51,9 +53,9 @@ class Assunto:
 
     def notificar(self, evento, dados):
         total = len(self._observadores)
-        print(f'[Observer] Notificando {total} inscrito(s) sobre o evento "{evento}"...')
+        rastrear("Observer", f'Notificando {total} inscrito(s) sobre o evento "{evento}"')
         if total == 0:
-            print("  -> Nenhum inscrito para notificar.")
+            rastrear(None, "  -> nenhum inscrito para notificar")
             return
         for observador in list(self._observadores):
             observador.atualizar(self, evento, dados)
@@ -67,7 +69,7 @@ class NotificadorDeUsuario(Observador):
 
     def atualizar(self, assunto, evento, dados):
         self.usuario.caixa_entrada.append(f"[{evento}] {dados}")
-        print(f"  -> Caixa de entrada de {self.usuario.apelido}: {dados}")
+        rastrear(None, f"  -> caixa de entrada de {self.usuario.apelido}: {dados}")
 
     def __eq__(self, outro):
         return (
@@ -87,7 +89,7 @@ class RegistroDeAtividade(Observador):
 
     def atualizar(self, assunto, evento, dados):
         self.eventos.append((evento, dados))
-        print(f"  -> Registro de atividade: evento {evento} gravado (total: {len(self.eventos)}).")
+        rastrear(None, f"  -> registro de atividade: {evento} gravado (total: {len(self.eventos)})")
 
     def __eq__(self, outro):
         return isinstance(outro, RegistroDeAtividade)

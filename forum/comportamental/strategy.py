@@ -19,6 +19,8 @@ Participantes
 
 from abc import ABC, abstractmethod
 
+from ..rastro import rastrear
+
 
 class EstrategiaDeOrdenacao(ABC):
     """Interface comum aos algoritmos de ordenacao."""
@@ -72,12 +74,12 @@ class ListagemDeTopicos:
 
     def definir_estrategia(self, estrategia):
         if type(estrategia) is type(self._estrategia):
-            print(f"[Strategy] Estrategia mantida: {estrategia.nome}")
+            rastrear("Strategy", f"Estrategia mantida: {estrategia.nome}")
             return
         anterior = self._estrategia.nome
         self._estrategia = estrategia
-        print(f"[Strategy] Estrategia trocada: {anterior} -> {estrategia.nome}")
+        rastrear("Strategy", f"Estrategia trocada: {anterior} -> {estrategia.nome}")
 
     def listar(self, topicos):
-        print(f"[Strategy] Ordenando os topicos por: {self._estrategia.nome}")
+        rastrear("Strategy", f"Ordenando os topicos por: {self._estrategia.nome}")
         return self._estrategia.ordenar(list(topicos))
