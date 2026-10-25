@@ -1,0 +1,121 @@
+
+digraph servidor {
+  label="Diagrama de classes - servidor (Flask + dominio)";
+
+  graph [fontname="DejaVu Sans", fontsize=11, labelloc="t", rankdir=TB,
+         splines=polyline, nodesep=0.35, ranksep=0.55, bgcolor="white"];
+  node  [shape=record, fontname="DejaVu Sans", fontsize=9,
+         style="filled", fillcolor="#f5f7fa", color="#5b6b7c"];
+  edge  [fontname="DejaVu Sans", fontsize=8, color="#5b6b7c"];
+
+  subgraph cluster_api {
+    label="Camada de API (Flask)"; style="rounded,filled"; fillcolor="#eef4ff"; color="#9db6e0";
+    app [label="{servidor.app|+ criar_app(fachada) : Flask|+ responder(dados, status)\l+ resumo_de_topico(topico)\l+ resumo_de_item(item)\l}"];
+    rastro [label="{forum.rastro|+ iniciar()\l+ rastrear(padrao, msg)\l+ coletar() : list\l}"];
+  }
+
+  subgraph cluster_facade {
+    label="Facade (estrutural)"; style="rounded,filled"; fillcolor="#fff6e8"; color="#e0b96b";
+    facade [label="{ForumFacade|+ cadastrar_usuario()\l+ abrir_discussao()\l+ responder()\l+ anexar()\l+ inscrever()\l+ alterar_estado()\l+ votar()\l+ formatar()\l+ buscar()\l+ estatisticas()\l}"];
+    erro [label="{ErroDeForum|+ mensagem : str\l+ codigo : int\l}"];
+  }
+
+  subgraph cluster_criacional {
+    label="Criacionais"; style="rounded,filled"; fillcolor="#eefaf0"; color="#86c79a";
+    forum [label="{Forum  «Singleton»|- _instancia : Forum\l|+ __new__()\l+ proximo_identificador()\l+ registrar_usuario()\l+ adicionar_topico()\l+ localizar()\l+ buscar_por_texto()\l}"];
+    criador [label="{CriadorDePublicacao  «abstrato»|+ publicar(id, autor, **dados)\l# _fabricar()  «factory method»\l}"];
+    criador_t [label="CriadorDeTopico"];
+    criador_m [label="CriadorDeMensagem"];
+    criador_a [label="CriadorDeAnexo"];
+    builder [label="{ConstrutorDeTopico  «Builder»|+ com_titulo()\l+ com_autor()\l+ com_conteudo()\l+ com_tags()\l+ fixado()\l+ construir() : Topico\l}"];
+    criador_t -> criador [arrowhead=onormal];
+    criador_m -> criador [arrowhead=onormal];
+    criador_a -> criador [arrowhead=onormal];
+  }
+
+  subgraph cluster_composite {
+    label="Composite (estrutural)"; style="rounded,filled"; fillcolor="#f3eefb"; color="#ab8fd4";
+    item [label="{ItemDiscussao  «abstrato»|+ identificador : int\l+ autor : Usuario\l+ pai : ItemDiscussao\l|+ rotulo()\l+ filhos()\l+ adicionar(item)\l+ linhas(nivel)\l+ total_itens()\l+ caminho()\l+ para_dicionario()\l}"];
+    composto [label="{NoComposto|- _filhos : list\l|+ adicionar()\l+ remover()\l}"];
+    anexo [label="{Anexo  «folha»|+ nome_arquivo : str\l+ tamanho_kb : int\l}"];
+    mensagem [label="{Mensagem|+ votos : int\l|+ votar()\l}"];
+    topico [label="{Topico|+ titulo : str\l+ tags : list\l+ fixado : bool\l|+ aceita_resposta()\l+ abrir() / fechar() / arquivar()\l}"];
+    composto -> item [arrowhead=onormal];
+    anexo -> item [arrowhead=onormal];
+    mensagem -> composto [arrowhead=onormal];
+    topico -> composto [arrowhead=onormal];
+    item -> item [arrowhead=vee, headlabel="  filhos", labeldistance=2.2];
+  }
+
+  subgraph cluster_decorator {
+    label="Decorator (estrutural)"; style="rounded,filled"; fillcolor="#f3eefb"; color="#ab8fd4";
+    conteudo [label="{Conteudo  «abstrato»|+ renderizar() : str\l}"];
+    simples [label="ConteudoSimples"];
+    decorador [label="{DecoradorDeConteudo|- _conteudo : Conteudo\l}"];
+    censura [label="ComCensura"];
+    destaque [label="ComDestaque"];
+    assinatura [label="ComAssinatura"];
+    simples -> conteudo [arrowhead=onormal];
+    decorador -> conteudo [arrowhead=onormal];
+    censura -> decorador [arrowhead=onormal];
+    destaque -> decorador [arrowhead=onormal];
+    assinatura -> decorador [arrowhead=onormal];
+    decorador -> conteudo [arrowhead=vee, headlabel="  envolve", labeldistance=2.5];
+  }
+
+  subgraph cluster_observer {
+    label="Observer (comportamental)"; style="rounded,filled"; fillcolor="#fdeeee"; color="#d98b8b";
+    assunto [label="{Assunto|- _observadores : list\l|+ inscrever()\l+ desinscrever()\l+ notificar(evento, dados)\l}"];
+    observador [label="{Observador  «abstrato»|+ atualizar(assunto, evento, dados)\l}"];
+    notificador [label="NotificadorDeUsuario"];
+    registro [label="RegistroDeAtividade"];
+    notificador -> observador [arrowhead=onormal];
+    registro -> observador [arrowhead=onormal];
+    assunto -> observador [arrowhead=vee, headlabel="  notifica", labeldistance=2.5];
+  }
+
+  subgraph cluster_strategy {
+    label="Strategy (comportamental)"; style="rounded,filled"; fillcolor="#fdeeee"; color="#d98b8b";
+    listagem [label="{ListagemDeTopicos  «contexto»|- _estrategia\l|+ definir_estrategia()\l+ listar(topicos)\l}"];
+    estrategia [label="{EstrategiaDeOrdenacao  «abstrato»|+ ordenar(topicos)\l}"];
+    recentes [label="PorMaisRecentes"];
+    respondidos [label="PorMaisRespondidos"];
+    votados [label="PorMaisVotados"];
+    recentes -> estrategia [arrowhead=onormal];
+    respondidos -> estrategia [arrowhead=onormal];
+    votados -> estrategia [arrowhead=onormal];
+    listagem -> estrategia [arrowhead=vee, headlabel="  delega", labeldistance=2.3];
+  }
+
+  subgraph cluster_state {
+    label="State (comportamental)"; style="rounded,filled"; fillcolor="#fdeeee"; color="#d98b8b";
+    estado [label="{EstadoTopico  «abstrato»|+ pode_receber_resposta()\l+ abrir() / fechar() / arquivar()\l}"];
+    aberto [label="Aberto"];
+    fechado [label="Fechado"];
+    arquivado [label="Arquivado  «terminal»"];
+    aberto -> estado [arrowhead=onormal];
+    fechado -> estado [arrowhead=onormal];
+    arquivado -> estado [arrowhead=onormal];
+  }
+
+  usuario [label="{Usuario|+ apelido : str\l+ email : str\l+ papel : str\l+ caixa_entrada : list\l}"];
+
+  app -> facade [style=dashed, arrowhead=vee];
+  app -> rastro [style=dashed, arrowhead=vee];
+  app -> erro [style=dashed, arrowhead=vee, label="traduz em HTTP"];
+  facade -> forum [style=dashed, arrowhead=vee];
+  facade -> builder [style=dashed, arrowhead=vee];
+  facade -> criador [style=dashed, arrowhead=vee];
+  facade -> topico [style=dashed, arrowhead=vee];
+  facade -> conteudo [style=dashed, arrowhead=vee];
+  facade -> listagem [style=dashed, arrowhead=vee];
+  facade -> notificador [style=dashed, arrowhead=vee];
+  facade -> erro [style=dashed, arrowhead=vee];
+  builder -> criador_t [style=dashed, arrowhead=vee];
+  criador -> item [style=dashed, arrowhead=vee, label="cria"];
+  topico -> assunto [arrowhead=onormal];
+  topico -> estado [arrowhead=vee, headlabel="  estado atual", labeldistance=3.0];
+  forum -> topico [arrowhead=vee];
+  item -> usuario [arrowhead=vee, headlabel="  autor", labeldistance=2.2];
+  notificador -> usuario [style=dashed, arrowhead=vee];
+}

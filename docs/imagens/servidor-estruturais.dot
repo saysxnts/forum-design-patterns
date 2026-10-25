@@ -1,0 +1,60 @@
+
+digraph estruturais {
+  label="Diagrama de classes - servidor: padroes estruturais";
+
+  graph [fontname="DejaVu Sans", fontsize=11, labelloc="t", rankdir=TB,
+         splines=polyline, nodesep=0.35, ranksep=0.55, bgcolor="white"];
+  node  [shape=record, fontname="DejaVu Sans", fontsize=9,
+         style="filled", fillcolor="#f5f7fa", color="#5b6b7c"];
+  edge  [fontname="DejaVu Sans", fontsize=8, color="#5b6b7c"];
+
+  subgraph cluster_api {
+    label="Camada de API (Flask)"; style="rounded,filled"; fillcolor="#eef4ff"; color="#9db6e0";
+    app [label="{servidor.app|+ criar_app(fachada) : Flask\l+ responder(dados, status)\l+ resumo_de_topico()\l+ resumo_de_item()\l}"];
+    rastro [label="{forum.rastro|+ iniciar()\l+ rastrear(padrao, msg)\l+ coletar() : list\l}"];
+  }
+
+  subgraph cluster_facade {
+    label="Facade"; style="rounded,filled"; fillcolor="#fff6e8"; color="#e0b96b";
+    facade [label="{ForumFacade|+ abrir_discussao()\l+ responder() / anexar()\l+ inscrever()\l+ alterar_estado()\l+ votar() / formatar()\l+ buscar() / estatisticas()\l}"];
+    erro [label="{ErroDeForum|+ mensagem : str\l+ codigo : int\l}"];
+  }
+
+  subgraph cluster_composite {
+    label="Composite"; style="rounded,filled"; fillcolor="#f3eefb"; color="#ab8fd4";
+    item [label="{ItemDiscussao  «componente»|+ identificador : int\l+ autor : Usuario\l+ pai : ItemDiscussao\l|+ rotulo()  «abstrato»\l+ tipo()  «abstrato»\l+ filhos()\l+ adicionar(item)\l+ linhas(nivel)\l+ total_itens()\l+ total_mensagens()\l+ caminho()\l+ percorrer()\l+ para_dicionario()\l}"];
+    composto [label="{NoComposto|- _filhos : list\l|+ adicionar()\l+ remover()\l}"];
+    anexo [label="{Anexo  «folha»|+ nome_arquivo : str\l+ tamanho_kb : int\l}"];
+    mensagem [label="{Mensagem  «composto»|+ votos : int\l|+ votar()\l}"];
+    topico [label="{Topico  «composto, raiz»|+ titulo : str\l+ tags : list\l+ fixado : bool\l|+ aceita_resposta()\l+ abrir() / fechar() / arquivar()\l}"];
+    composto -> item [arrowhead=onormal];
+    anexo -> item [arrowhead=onormal];
+    mensagem -> composto [arrowhead=onormal];
+    topico -> composto [arrowhead=onormal];
+    composto -> item [arrowhead=vee, label="filhos"];
+  }
+
+  subgraph cluster_decorator {
+    label="Decorator"; style="rounded,filled"; fillcolor="#f3eefb"; color="#ab8fd4";
+    conteudo [label="{Conteudo  «componente»|+ renderizar() : str\l}"];
+    simples [label="{ConteudoSimples|- _texto : str\l}"];
+    decorador [label="{DecoradorDeConteudo|- _conteudo : Conteudo\l}"];
+    censura [label="{ComCensura|+ PALAVRAS_PROIBIDAS\l}"];
+    destaque [label="ComDestaque"];
+    assinatura [label="{ComAssinatura|- _usuario : Usuario\l}"];
+    simples -> conteudo [arrowhead=onormal];
+    decorador -> conteudo [arrowhead=onormal];
+    censura -> decorador [arrowhead=onormal];
+    destaque -> decorador [arrowhead=onormal];
+    assinatura -> decorador [arrowhead=onormal];
+    decorador -> conteudo [arrowhead=vee, label="envolve"];
+  }
+
+  app -> facade [style=dashed, arrowhead=vee];
+  app -> rastro [style=dashed, arrowhead=vee];
+  app -> erro [style=dashed, arrowhead=vee, label="traduz em HTTP"];
+  facade -> topico [style=dashed, arrowhead=vee];
+  facade -> conteudo [style=dashed, arrowhead=vee];
+  facade -> erro [style=dashed, arrowhead=vee];
+  app -> item [style=dashed, arrowhead=vee, label="para_dicionario()"];
+}

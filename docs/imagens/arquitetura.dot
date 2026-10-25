@@ -1,0 +1,29 @@
+
+digraph arquitetura {
+  label="Arquitetura da aplicacao";
+  graph [fontname="DejaVu Sans", fontsize=12, labelloc="t", rankdir=LR, nodesep=0.6, ranksep=0.9];
+  node  [shape=box, style="rounded,filled", fontname="DejaVu Sans", fontsize=10,
+         fillcolor="#f5f7fa", color="#5b6b7c"];
+  edge  [fontname="DejaVu Sans", fontsize=9, color="#5b6b7c"];
+
+  subgraph cluster_c {
+    label="Modulo cliente"; style="rounded,filled"; fillcolor="#eef4ff"; color="#9db6e0";
+    gui [label="JanelaPrincipal\n(PySide6)"];
+    proxy [label="ApiForum\nproxy remoto"];
+    gui -> proxy;
+  }
+
+  subgraph cluster_s {
+    label="Modulo servidor"; style="rounded,filled"; fillcolor="#eefaf0"; color="#86c79a";
+    rotas [label="Rotas Flask\nservidor/app.py"];
+    fachada [label="ForumFacade\ncamada de servico"];
+    dominio [label="Dominio\n9 padroes GoF\n(pacote forum)"];
+    memoria [label="Forum «Singleton»\nestado em memoria\n(sem banco de dados)"];
+    rotas -> fachada;
+    fachada -> dominio;
+    dominio -> memoria;
+  }
+
+  proxy -> rotas [label="HTTP / JSON", color="#c0392b", fontcolor="#c0392b"];
+  rotas -> proxy [label="dados + rastro de padroes", style=dashed, color="#c0392b", fontcolor="#c0392b"];
+}

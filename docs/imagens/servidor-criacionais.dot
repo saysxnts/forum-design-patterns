@@ -1,0 +1,48 @@
+
+digraph criacionais {
+  label="Diagrama de classes - servidor: padroes criacionais";
+
+  graph [fontname="DejaVu Sans", fontsize=11, labelloc="t", rankdir=TB,
+         splines=polyline, nodesep=0.35, ranksep=0.55, bgcolor="white"];
+  node  [shape=record, fontname="DejaVu Sans", fontsize=9,
+         style="filled", fillcolor="#f5f7fa", color="#5b6b7c"];
+  edge  [fontname="DejaVu Sans", fontsize=8, color="#5b6b7c"];
+
+  subgraph cluster_servico {
+    label="Camada de servico"; style="rounded,filled"; fillcolor="#fff6e8"; color="#e0b96b";
+    facade [label="{ForumFacade  «Facade»|+ cadastrar_usuario()\l+ abrir_discussao()\l+ responder()\l+ anexar()\l}"];
+  }
+
+  subgraph cluster_singleton {
+    label="Singleton"; style="rounded,filled"; fillcolor="#eefaf0"; color="#86c79a";
+    forum [label="{Forum|- _instancia : Forum  «classe»\l- _usuarios : dict\l- _topicos : dict\l- _proximo_identificador : int\l|+ __new__()  «controla a instancia»\l+ proximo_identificador()\l+ registrar_usuario()\l+ obter_usuario()\l+ adicionar_topico()\l+ localizar(id)\l+ buscar_por_texto(termo)\l+ estatisticas()\l+ resetar()  «classe, testes»\l}"];
+  }
+
+  subgraph cluster_builder {
+    label="Builder"; style="rounded,filled"; fillcolor="#eefaf0"; color="#86c79a";
+    builder [label="{ConstrutorDeTopico|- _titulo, _autor, _conteudo\l- _tags, _fixado, _identificador\l|+ com_identificador()\l+ com_titulo()\l+ com_autor()\l+ com_conteudo()\l+ com_tag() / com_tags()\l+ fixado()\l+ construir() : Topico\l# _reiniciar()\l}"];
+  }
+
+  subgraph cluster_factory {
+    label="Factory Method"; style="rounded,filled"; fillcolor="#eefaf0"; color="#86c79a";
+    criador [label="{CriadorDePublicacao  «abstrato»|+ tipo : str\l|+ publicar(id, autor, **dados)\l# _fabricar()  «factory method»\l}"];
+    criador_t [label="{CriadorDeTopico|# _fabricar() : Topico\l}"];
+    criador_m [label="{CriadorDeMensagem|# _fabricar() : Mensagem\l}"];
+    criador_a [label="{CriadorDeAnexo|# _fabricar() : Anexo\l}"];
+    criador_t -> criador [arrowhead=onormal];
+    criador_m -> criador [arrowhead=onormal];
+    criador_a -> criador [arrowhead=onormal];
+  }
+
+  produto [label="{ItemDiscussao  «produto»|Topico | Mensagem | Anexo}", fillcolor="#f3eefb", color="#ab8fd4"];
+  usuario [label="{Usuario|+ apelido, email, papel\l+ caixa_entrada : list\l}"];
+
+  facade -> forum [style=dashed, arrowhead=vee];
+  facade -> builder [style=dashed, arrowhead=vee];
+  facade -> criador_m [style=dashed, arrowhead=vee];
+  facade -> criador_a [style=dashed, arrowhead=vee];
+  builder -> criador_t [style=dashed, arrowhead=vee];
+  criador -> produto [style=dashed, arrowhead=vee, label="cria"];
+  forum -> produto [arrowhead=vee, label="guarda"];
+  forum -> usuario [arrowhead=vee, label="guarda"];
+}

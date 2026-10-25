@@ -1,0 +1,49 @@
+
+digraph cliente {
+  label="Diagrama de classes - cliente (PySide6)";
+
+  graph [fontname="DejaVu Sans", fontsize=11, labelloc="t", rankdir=TB,
+         splines=polyline, nodesep=0.35, ranksep=0.55, bgcolor="white"];
+  node  [shape=record, fontname="DejaVu Sans", fontsize=9,
+         style="filled", fillcolor="#f5f7fa", color="#5b6b7c"];
+  edge  [fontname="DejaVu Sans", fontsize=8, color="#5b6b7c"];
+
+  subgraph cluster_janela {
+    label="Interface grafica"; style="rounded,filled"; fillcolor="#eef4ff"; color="#9db6e0";
+    janela [label="{JanelaPrincipal : QMainWindow|- api : ApiForum\l- _topico_atual : int\l+ combo_usuario, lista_topicos\l+ arvore, painel_rastro\l|+ recarregar_tudo()\l+ carregar_usuarios()\l+ carregar_topicos()\l+ carregar_discussao()\l+ abrir_topico() / responder()\l+ anexar() / votar() / inscrever()\l+ alterar_estado() / buscar()\l+ formatar_conteudo()\l# _executar(descricao, chamada)\l# _registrar(descricao, rastro)\l}"];
+    entrada [label="{cliente.__main__|+ main(argumentos)\l}"];
+  }
+
+  subgraph cluster_dialogos {
+    label="Caixas de dialogo"; style="rounded,filled"; fillcolor="#f3eefb"; color="#ab8fd4";
+    base [label="{_DialogoBase : QDialog|# _adicionar_botoes()\l}"];
+    d_usuario [label="{DialogoUsuario|+ valores()\l}"];
+    d_topico [label="{DialogoNovoTopico|+ valores()\l}"];
+    d_resposta [label="{DialogoResposta|+ valores()\l}"];
+    d_anexo [label="{DialogoAnexo|+ valores()\l}"];
+    d_formatar [label="{DialogoFormatar|+ filtros()\l+ valores()\l+ mostrar_resultado(texto)\l}"];
+    d_usuario -> base [arrowhead=onormal];
+    d_topico -> base [arrowhead=onormal];
+    d_resposta -> base [arrowhead=onormal];
+    d_anexo -> base [arrowhead=onormal];
+    d_formatar -> base [arrowhead=onormal];
+  }
+
+  subgraph cluster_api {
+    label="Acesso ao servidor"; style="rounded,filled"; fillcolor="#eefaf0"; color="#86c79a";
+    api [label="{ApiForum  «proxy remoto»|+ endereco : str\l- _sessao : requests.Session\l|+ cadastrar_usuario()\l+ listar_topicos(ordenacao)\l+ abrir_topico()\l+ obter_topico(id)\l+ responder() / anexar() / votar()\l+ inscrever() / alterar_estado()\l+ formatar() / buscar()\l+ notificacoes() / estatisticas()\l# _chamar(metodo, rota)\l}"];
+    resposta [label="{Resposta|+ dados : object\l+ rastro : list\l}"];
+    erro_api [label="{ErroDaApi|+ mensagem : str\l+ codigo : int\l+ rastro : list\l}"];
+  }
+
+  servidor [label="{Servidor Flask|/api/usuarios\l/api/topicos\l/api/itens/\<id\>/respostas\l/api/mensagens/\<id\>/anexos\l/api/mensagens/\<id\>/votos\l/api/topicos/\<id\>/estado\l/api/conteudo/formatado\l/api/busca  /api/estatisticas\l}",
+             fillcolor="#fff6e8", color="#e0b96b"];
+
+  entrada -> janela [style=dashed, arrowhead=vee];
+  entrada -> api [style=dashed, arrowhead=vee];
+  janela -> api [arrowhead=vee];
+  janela -> base [style=dashed, arrowhead=vee];
+  api -> resposta [style=dashed, arrowhead=vee, label="devolve"];
+  api -> erro_api [style=dashed, arrowhead=vee, label="levanta"];
+  api -> servidor [label="HTTP + JSON", color="#c0392b", fontcolor="#c0392b"];
+}

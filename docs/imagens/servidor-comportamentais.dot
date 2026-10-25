@@ -1,0 +1,59 @@
+
+digraph comportamentais {
+  label="Diagrama de classes - servidor: padroes comportamentais";
+
+  graph [fontname="DejaVu Sans", fontsize=11, labelloc="t", rankdir=TB,
+         splines=polyline, nodesep=0.35, ranksep=0.55, bgcolor="white"];
+  node  [shape=record, fontname="DejaVu Sans", fontsize=9,
+         style="filled", fillcolor="#f5f7fa", color="#5b6b7c"];
+  edge  [fontname="DejaVu Sans", fontsize=8, color="#5b6b7c"];
+
+  subgraph cluster_facade {
+    label="Camada de servico"; style="rounded,filled"; fillcolor="#fff6e8"; color="#e0b96b";
+    facade [label="{ForumFacade|+ inscrever()\l+ alterar_estado()\l+ listar_topicos(ordenacao)\l+ responder()\l}"];
+  }
+
+  topico [label="{Topico|+ titulo : str\l- _estado : EstadoTopico\l|+ aceita_resposta()\l+ abrir() / fechar() / arquivar()\l+ definir_estado()\l}", fillcolor="#f3eefb", color="#ab8fd4"];
+
+  subgraph cluster_observer {
+    label="Observer"; style="rounded,filled"; fillcolor="#fdeeee"; color="#d98b8b";
+    assunto [label="{Assunto  «sujeito»|- _observadores : list\l|+ inscrever(observador)\l+ desinscrever(observador)\l+ notificar(evento, dados)\l}"];
+    observador [label="{Observador  «abstrato»|+ atualizar(assunto, evento, dados)\l}"];
+    notificador [label="{NotificadorDeUsuario|+ usuario : Usuario\l|+ atualizar()\l+ __eq__()  «evita duplicata»\l}"];
+    registro [label="{RegistroDeAtividade|+ eventos : list\l|+ atualizar()\l}"];
+    notificador -> observador [arrowhead=onormal];
+    registro -> observador [arrowhead=onormal];
+    assunto -> observador [arrowhead=vee, label="notifica"];
+  }
+
+  subgraph cluster_strategy {
+    label="Strategy"; style="rounded,filled"; fillcolor="#fdeeee"; color="#d98b8b";
+    listagem [label="{ListagemDeTopicos  «contexto»|- _estrategia : EstrategiaDeOrdenacao\l|+ definir_estrategia()\l+ listar(topicos)\l}"];
+    estrategia [label="{EstrategiaDeOrdenacao  «abstrato»|+ nome : str\l|+ ordenar(topicos)\l}"];
+    recentes [label="{PorMaisRecentes|+ ordenar()\l}"];
+    respondidos [label="{PorMaisRespondidos|+ ordenar()\l}"];
+    votados [label="{PorMaisVotados|+ ordenar()\l}"];
+    recentes -> estrategia [arrowhead=onormal];
+    respondidos -> estrategia [arrowhead=onormal];
+    votados -> estrategia [arrowhead=onormal];
+    listagem -> estrategia [arrowhead=vee, label="delega"];
+  }
+
+  subgraph cluster_state {
+    label="State"; style="rounded,filled"; fillcolor="#fdeeee"; color="#d98b8b";
+    estado [label="{EstadoTopico  «abstrato»|+ nome : str\l|+ pode_receber_resposta()\l+ abrir(topico)\l+ fechar(topico)\l+ arquivar(topico)\l# _trocar() / _recusar()\l}"];
+    aberto [label="{Aberto|pode responder: sim\lvai para Fechado ou Arquivado\l}"];
+    fechado [label="{Fechado|pode responder: nao\lvai para Aberto ou Arquivado\l}"];
+    arquivado [label="{Arquivado  «terminal»|pode responder: nao\lnenhuma transicao de saida\l}"];
+    aberto -> estado [arrowhead=onormal];
+    fechado -> estado [arrowhead=onormal];
+    arquivado -> estado [arrowhead=onormal];
+  }
+
+  facade -> listagem [style=dashed, arrowhead=vee];
+  facade -> notificador [style=dashed, arrowhead=vee];
+  facade -> topico [style=dashed, arrowhead=vee];
+  topico -> assunto [arrowhead=onormal];
+  topico -> estado [arrowhead=vee, label="estado atual"];
+  listagem -> topico [style=dashed, arrowhead=vee, label="ordena"];
+}
