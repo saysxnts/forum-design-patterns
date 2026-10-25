@@ -1,0 +1,4 @@
+# Dependencias do projeto. Instale com:  pip install -r requirements.txt
+Flask>=3.0
+requests>=2.31
+PySide6>=6.5
